@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -18,5 +19,12 @@ func NewSessionRedis() *redis.Client {
 		ReadTimeout: 5 * time.Second,
 	}
 
-	return redis.NewClient(options)
+	rdb := redis.NewClient(options)
+
+	err := rdb.Ping(context.Background()).Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return rdb
 }
