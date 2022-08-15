@@ -76,14 +76,14 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 	}
 
-	go func ()  {
+	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, os.Interrupt)
 
-		<- quit
+		<-quit
 
 		var wg sync.WaitGroup
 		wg.Add(3)
@@ -93,8 +93,8 @@ func main() {
 		go closeRedis(&wg, redisDB)
 
 		select {
-        case <-ctx.Done():
-            log.Println(ctx.Err())
+		case <-ctx.Done():
+			log.Println(ctx.Err())
 		default:
 		}
 
@@ -117,7 +117,7 @@ func shutdownServer(wg *sync.WaitGroup, ctx context.Context, server *http.Server
 
 func closePgx(wg *sync.WaitGroup, conn *pgxpool.Pool) {
 	defer wg.Done()
-	
+
 	conn.Close()
 
 	log.Println("Postgres disconnected")
@@ -125,7 +125,6 @@ func closePgx(wg *sync.WaitGroup, conn *pgxpool.Pool) {
 
 func closeRedis(wg *sync.WaitGroup, conn *redis.Client) {
 	defer wg.Done()
-
 
 	if err := conn.Close(); err != nil {
 		log.Fatal(err)

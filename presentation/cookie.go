@@ -18,7 +18,7 @@ var (
 func SetCookie(w http.ResponseWriter, value string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
-	
+
 	encoded, err := securer.Encode("app_session", value)
 
 	if err != nil {
