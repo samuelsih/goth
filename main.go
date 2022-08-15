@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -84,54 +85,51 @@ func main() {
 
 		<- quit
 
-		closedServerChan := make(chan bool, 1)
-		closedPgxChan := make(chan bool, 1)
-		closedRedisChan := make(chan bool, 1)
+		var wg sync.WaitGroup
+		wg.Add(3)
 
-		go shutdownServer(closedServerChan, ctx, server)
-		go closePgx(closedPgxChan, pgDB)
-		go closeRedis(closedRedisChan, redisDB)
+		go shutdownServer(&wg, ctx, server)
+		go closePgx(&wg, pgDB)
+		go closeRedis(&wg, redisDB)
 
-		<- closedPgxChan
-		<- closedRedisChan
-		<- closedServerChan
-
-		if d := ctx.Done(); d != nil {
-			log.Println("Context Done Hit!")
+		select {
+        case <-ctx.Done():
+            log.Println(ctx.Err())
+		default:
 		}
 
-		close(closedPgxChan)
-		close(closedRedisChan)
-		close(closedServerChan)
+		wg.Wait()
 	}()
 
 	server.ListenAndServeTLS("example.crt", "example.key")
 }
 
-func shutdownServer(done chan bool, ctx context.Context, server *http.Server) {
-	log.Println("Shutdown server")
+func shutdownServer(wg *sync.WaitGroup, ctx context.Context, server *http.Server) {
+	defer wg.Done()
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("Server shutdown error:", err)
+		return
 	}
 
-	done <- true
+	log.Println("Shutdown server")
 }
 
-func closePgx(done chan bool, conn *pgxpool.Pool) {
-	log.Println("Closing postgres")
+func closePgx(wg *sync.WaitGroup, conn *pgxpool.Pool) {
+	defer wg.Done()
 	
 	conn.Close()
 
-	done <- true
+	log.Println("Postgres disconnected")
 }
 
-func closeRedis(done chan bool, conn *redis.Client) {
-	log.Println("Closing redis")
+func closeRedis(wg *sync.WaitGroup, conn *redis.Client) {
+	defer wg.Done()
+
 
 	if err := conn.Close(); err != nil {
 		log.Fatal(err)
 	}
 
-	done <- true
+	log.Println("Redis disconnected")
 }
