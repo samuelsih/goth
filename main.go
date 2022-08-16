@@ -25,7 +25,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Use(
-		httprate.LimitByIP(60, 1*time.Minute),
+		httprate.LimitByIP(30, 1*time.Minute),
 		middleware.Logger,
 		middleware.Recoverer,
 		middleware.GetHead,
@@ -56,7 +56,10 @@ func main() {
 			r.Post("/login", Login(&guest))
 		})
 
-		r.Post("/logout", Logout(&guest))
+		r.Group(func(r chi.Router) {
+			r.Use(midd.CookieExists())
+			r.Post("/logout", Logout(&guest))
+		})
 	})
 
 	//Private
