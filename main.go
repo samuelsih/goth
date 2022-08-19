@@ -95,15 +95,10 @@ func main() {
 		go closePgx(&wg, pgDB)
 		go closeRedis(&wg, redisDB)
 
-		select {
-		case <-ctx.Done():
-			log.Println(ctx.Err())
-		default:
-		}
-
 		wg.Wait()
 	}()
 
+	log.Println("App ready!")
 	server.ListenAndServeTLS("example.crt", "example.key")
 }
 

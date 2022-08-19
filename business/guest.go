@@ -14,8 +14,9 @@ const (
 )
 
 var (
-	errInternal = "internal server error, please try again in a minutes"
+	// errInternal = "internal server error, please try again in a minutes"
 	errPassword = "username or password doesn't match"
+	errUserNotFound = "username not found"
 )
 
 type GuestDeps struct {
@@ -29,7 +30,7 @@ type LoginIn struct {
 }
 
 type LoginOut struct {
-	User model.UserSession `json:"user"`
+	User model.UserSession `json:"user,omitempty"`
 	CommonResponse
 }
 
@@ -38,7 +39,7 @@ func (g *GuestDeps) GuestLogin(ctx context.Context, in *LoginIn) (string, LoginO
 
 	user, err := g.Conn.GetUserByEmail(ctx, in.Email)
 	if err != nil {
-		out.SetError(statusErrInternal, errInternal)
+		out.SetError(statusBadReq, errUserNotFound)
 		return "", out
 	}
 
